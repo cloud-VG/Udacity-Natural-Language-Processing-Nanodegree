@@ -1,41 +1,46 @@
-# Introduction
-In this notebook, you will build a deep neural network that functions as part of an end-to-end machine translation pipeline. Your completed pipeline will accept English text as input and return the French translation.
+# Machine Translation
 
-# Setup
+In this project, we build a deep neural network that functions as part of a machine translation pipeline using [Keras](https://keras.io/). The pipeline accepts English text as input and returns the French translation. The goal is to achieve the highest translation accuracy possible.
 
-This project requires GPU acceleration to run efficiently. Support is available to use either of the following two methods for accessing GPU-enabled cloud computing resources.
+### RNN 
+![rnn](images/rnn_overview.png)
 
-## Udacity Workspaces (Recommended)
+RNNs are designed to take sequences of text as inputs or return sequences of text as outputs, or both. They're called recurrent because the network's hidden layers have a loop in which the output from one time step becomes an input at the next time step. This recurrence serves as a form of memory. It allows contextual information to flow through the network so that relevant outputs from previous time steps can be applied to network operations at the current time step.
 
-Udacity Workspaces provide remote connection to GPU-enabled instances right from the classroom. Refer to the classroom lesson for this project to find an overview of navigating & using Jupyter notebook Workspaces.
+![unfolded_rnn](images/rnn-layer.png)
 
-## Amazon Web Services (Optional)
+### Encoder-Decoder
+![encoder-decoder](images/enc-dec.png)
 
-Please refer to the Udacity instructions for setting up a GPU instance for this project, and refer to the project instructions in the classroom for setup. The recommended AMI should include compatible versions of all required software and libraries to complete the project. [link for AIND students](https://classroom.udacity.com/nanodegrees/nd889/parts/16cf5df5-73f0-4afa-93a9-de5974257236/modules/53b2a19e-4e29-4ae7-aaf2-33d195dbdeba/lessons/2df3b94c-4f09-476a-8397-e8841b147f84/project)
+The encoder summarizes the input into a context variable, also called the state. This context is then decoded and the output sequence is generated.Since both the encoder and decoder are recurrent, they have loops which process each part of the sequence at different time steps. To picture this, it's best to unroll the network so we can see what's happening at each time step.
 
-## Install
-- Python 3
-- NumPy
-- TensorFlow 1.x
-- Keras 2.x
 
-# Submission
-When you are ready to submit your project, do the following steps:
-1. Ensure you pass all points on the [rubric](https://review.udacity.com/#!/rubrics/1004/view).
-2. Submit the following in a zip file:
-  - `helper.py`
-  - `machine_translation.ipynb`
-  - `machine_translation.html`
+### Model
+```python
+def model_final(input_shape, output_sequence_length, english_vocab_size, french_vocab_size):
+    learning_rate = 2e-3
+    
+    model = Sequential()
+    
+    # Embedding
+    model.add(Embedding(french_vocab_size, 200, input_length=input_shape[1]))
+    
+    # Encoder
+    model.add(Bidirectional(GRU(128)))
+    model.add(RepeatVector(output_sequence_length))
+    
+    # Decoder
+    model.add(Bidirectional(GRU(128, return_sequences=True)))
+    model.add(TimeDistributed(Dense(512, activation='relu')))
+    model.add(Dropout(0.5))
+    model.add(TimeDistributed(Dense(french_vocab_size, activation='softmax')))
+    
+    
+    model.compile(loss=sparse_categorical_crossentropy,
+                  optimizer=Adam(learning_rate),
+                  metrics=['accuracy'])
+    
+    return model
+```
 
-## Converting to HTML
-
-There are several ways to generate an HTML copy of the notebook:
-
- - Running the last cell of the notebook will export an HTML copy
-
- - Navigating to **File -> Download as -> HTML (.html)** within the notebook
-
- - Using `nbconvert` from the command line
-
-    $ pip install nbconvert
-    $ nbconvert machine_translation.ipynb
+_Images credits: [Udacity](www.udacity.com)_
